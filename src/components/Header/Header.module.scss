@@ -1,0 +1,56 @@
+.header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background-color: whitesmoke;
+
+    .wrapper{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .menu{
+            list-style-type: none;
+            padding-right: 10px;
+            border-right:  1.5px solid rgb(42, 47, 73);
+
+            li{
+                display: inline-block;
+               a{
+                display: block;
+                font-size: 16;
+                color:  rgb(42, 47, 73);
+                padding: 0 6px;
+                text-decoration: none;
+                transition: all 0.3s ease-in-out;
+                &:hover{
+                    color: rgb(105, 115, 172);
+                }
+               }
+            }
+        }
+
+        .authButtons{
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+            
+            .connectButton{
+                font-size: 16px;
+
+                padding: 6px 10px;
+                color: whitesmoke;
+                cursor: pointer;
+                outline: none;
+                border: none;
+                border-radius: 10px;
+                background-color: rgb(105, 115, 172);
+                transition: all 0.3s ease-in-out;
+                &:hover{
+                    background-color: rgb(163, 173, 233);
+                }
+            }
+        }
+    }
+}

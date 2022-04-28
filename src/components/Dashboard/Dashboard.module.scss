@@ -1,0 +1,136 @@
+p{
+    color: rgb(73, 73, 73);
+}
+
+.dashboardBody{
+    margin: 0 60px;
+    .dashboard{
+        display: flex;
+        
+        .purchasesStatus{
+            min-width: 50%;
+            margin-right: 10px;
+            .purchasesActive{
+                background-color: whitesmoke;
+                padding: 15px;
+                border-radius: 15px;
+                transition: all 0.4s ease-in-out;
+                .puchasesActivePanels{
+                    display: flex;
+                    transition: all 0.4s ease-in-out;
+                    .purchases{
+                        border-radius: 15px;
+                        margin-right: 10px;
+                        background-color: white;
+                        padding: 15px;
+                        max-width: 25%;
+                        .purchasesIcons{
+                            text-align: center;
+                            img{
+                                max-width: 70%;
+                            }
+                            .descriptionIcons{
+                            }
+                            .descriptionControls{
+                            }
+                        }
+                        
+                        
+                    }
+                }
+                
+                
+            }
+            .purchasesCompleted{
+                background-color: whitesmoke;
+                margin-top: 15px;
+                padding: 15px;
+                border-radius: 15px;
+                .puchasesCompletedPanels{
+                    display: flex;
+                    .purchases{
+                        border-radius: 15px;
+                        margin-right: 10px;
+                        background-color: white;
+                        padding: 15px;
+                        max-width: 25%;
+                        .purchasesIcons{
+                            text-align: center;
+                            img{
+                                max-width: 70%;
+                            }
+                            .descriptionIcons{
+                            }
+                            .descriptionControls{
+                            }
+                        }
+                        
+                    }
+                }
+            }
+            .purchasesStatusText{
+                font-weight: bold;
+                font-size: 17px;
+                margin-top: 0;
+            }
+        }
+        .controlPanel{
+            min-width: 50%;
+            .connectButton{
+                font-size: 16px;
+
+                padding: 6px 10px;
+                color: whitesmoke;
+                cursor: pointer;
+                outline: none;
+                border: none;
+                border-radius: 10px;
+                background-color: rgb(105, 115, 172);
+                transition: all 0.3s ease-in-out;
+                &:hover{
+                    background-color: rgb(163, 173, 233);
+                }
+            }
+        }
+        .CheckInfoBtn{
+
+            
+            font-size: 16px;
+
+            padding: 6px 10px;
+            color: whitesmoke;
+            cursor: pointer;
+            outline: none;
+            border: none;
+            border-radius: 10px;
+            background-color: rgb(105, 115, 172);
+            transition: all 0.3s ease-in-out;
+            &:hover{
+                background-color: rgb(163, 173, 233);
+            }          
+        }
+        .CheckInfoBtnCompleted{
+            font-size: 16px;
+
+            padding: 6px 10px;
+            color: whitesmoke;
+            cursor: pointer;
+            outline: none;
+            border: none;
+            border-radius: 10px;
+            background-color: rgb(77, 80, 100);
+            transition: all 0.3s ease-in-out;
+            &:hover{
+                background-color: rgb(111, 114, 136);
+            }     
+        }
+    }
+    
+}
+
+.mt0{
+    margin-top: 0;
+}
+.mmStatus{
+    display: none;
+}

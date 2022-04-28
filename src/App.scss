@@ -2,6 +2,27 @@
   text-align: center;
 }
 
+.tab{
+  width: 100%;
+  background-color: rgb(255, 255, 255);
+  height: 70px;
+}
+
+.connectWallet{
+  color: whitesmoke;
+  border-radius: 30px;
+  padding: 10px 40px;
+  background-color: rgb(52, 145, 207);
+  outline: none;
+  border: solid 2px rgb(255, 255, 255);
+  transition: all 0.2s ease-in-out;
+}
+
+.connectWallet:hover{
+  border-color: rgb(120, 178, 218);
+  cursor: pointer;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
