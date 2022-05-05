@@ -72,7 +72,6 @@ const WalletProvider = ({ children }: { children: JSX.Element }) => {
         // console.log("network changed");
         oldNetwork && window.location.reload();
       });
-      /* @ts-ignore */
       window.ethereum.on("chainChanged", () => window.location.reload());
     };
     init();
