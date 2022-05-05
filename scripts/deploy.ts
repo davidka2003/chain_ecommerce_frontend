@@ -17,6 +17,7 @@ async function main() {
 
   // We get the contract to deploy
   const CHAIN_ECOMMERCE = await ethers.getContractFactory("CHAIN_ECOMMERCE");
+  console.log("factory added");
   const chain_ecommerce = await CHAIN_ECOMMERCE.deploy();
 
   await chain_ecommerce.deployed();

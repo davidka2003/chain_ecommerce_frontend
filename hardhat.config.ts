@@ -24,11 +24,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.4",
+    version: "0.8.7",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 200,
       },
     },
   },
@@ -47,8 +47,10 @@ const config: HardhatUserConfig = {
     },
     localhost: {
       allowUnlimitedContractSize: true,
-      gas: 12000000,
-      blockGasLimit: 0x1fffffffffffff,
+      // gas: 12000000,
+      // blockGasLimit: 0x1fffffffffffff,
+      gas: 12000000000,
+      blockGasLimit: 12000000,
       url: "http://127.0.0.1:8545",
       accounts: [
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",

@@ -20,7 +20,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "blockchain": "npx hardhat node",
-    "dev": "npx hardhat run scripts/deploy.ts --network localhost && yarn start"
+    "dev": "yarn compile && yarn start",
+    "compile": "npx hardhat run scripts/deploy.ts --network localhost",
+    "preStart": "npx hardhat run scripts/preStart.ts --network localhost"
   },
   "eslintConfig": {
     "extends": [

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.7.0 <0.9.0;
+// pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.0;
+import "./ReentrancyGuard.sol";
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, with an overflow flag.
@@ -212,9 +214,34 @@ library SafeMath {
         }
     }
 }
-
-contract CHAIN_ECOMMERCE {
+///@title CHAIN_ECOMMERCE
+contract CHAIN_ECOMMERCE is ReentrancyGuard{
     /* private ids need only for recognize */
+    // bool private _status = false;
+    // modifier nonReentrant() {
+    //     require(!_status, "Reentrant call");
+    //     _status = true;
+
+    //     _;
+
+    //     // By storing the original value once again, a refund is triggered (see
+    //     // https://eips.ethereum.org/EIPS/eip-2200)
+    //     _status = false;
+    // }
+    string public constant CUSTOMER_NOT_EXIST = "Customer doesn't exist";
+    string public constant SHOP_NOT_EXIST = "Shop doesn't exist";
+    string public constant DELIVERY_NOT_EXIST = "Delivery doesn't exist";
+    string public constant ITEM_NOT_EXIST = "Item doesn't exist";
+    string public constant ADDRESS_NOT_EXIST = "Address doesn't exist";
+    string public constant NOT_ENOUGH_ETHER = "Not enough ether";
+    string public constant TRANSFER_FAILURE = "Transfer failure";
+    string public constant INVALID_ARGS = "Invalid args";
+    string public constant ALREADY_MINTED = "Item already minted";
+    string public constant ALREADY_DELIVERED = "Already delivered";
+    string public constant ALREADY_CANCELED = "Already canceled";
+    uint256 public constant MINIMAL_PRICE = 0.5 ether;
+    uint256 public constant FIXED_COMISSION = 0.1 ether;
+    string public constant DEFAULT_META_URI = "DEFAULT_META_URI";
     using SafeMath for uint256;
     uint256 private _shopId;
     uint256 private _deliveryId;
@@ -238,6 +265,7 @@ contract CHAIN_ECOMMERCE {
         uint256 tokenId;
         string metaUri;
         address owner;
+        uint256 shopId;
         uint256 price;
         bool isAvailable;
         bool isDelivered;
@@ -247,43 +275,71 @@ contract CHAIN_ECOMMERCE {
         uint256 deliveryPrice;
     }
     struct Shop {
+        uint256 shopId;
         string metaUri; /* shop metadata */
         string title;
         bool isBanned;
         bool exist;
         uint256 _itemId;
         mapping(uint256 => Item) items;
-        uint256[] _itemIdsArray;
+        // uint256[] _itemIdsArray;
         uint256 availableBalance; /* available to withdraw */
     }
     struct Delivery {
         /* or countries array */
+        uint256 deliveryId;
         uint256 deliveryPrice;
         string metaUri; /* shop metadata */
         string title;
         bool exist;
         bool isBanned;
         mapping(uint256 => bool) isAvailableForShop; /* shopId => availablity*/
-        uint256[] _shopIdsArray;
+        uint256[] _shopIds;
         uint256 availableBalance; /* available to withdraw */
     }
     struct Customer {
         // mapping(address=>bool) wallets;/* wallet address => isExist */
+        uint256 customerId;
         string metaUri;
         string title;
         bool exist;
         mapping(uint256 => uint256[]) orders;/* shopId => itemIds[] */
+        uint256[] _shops;
         /* add shops array to get orders from shops */
     }
     /* STORAGE */
     /* Customers storage */
+    /** 
+    @dev address customer address
+    @dev uint256 customer id
+    */ 
     mapping(address => uint256) private _customerIds;/* customer address => customerId */
+    /** 
+    @dev uint256 customer id
+    @dev Customer
+    */ 
     mapping(uint256 => Customer) private _customers;/* customerId => code accessable struct */
     /* Shops storage */
+    /** 
+    @dev address shop address
+    @dev uint256 shop id
+    */ 
     mapping(address => uint256) private _shopIds;/* shop address => shopId */
+    /** 
+    @dev uint256 shop id
+    @dev Shop
+    */ 
     mapping(uint256 => Shop) private _shops;/* shopId => code accessable struct */
     /* Deliveries storage */
+    /** 
+    @dev address delivery address
+    @dev uint256 delivery id
+    */ 
     mapping(address => uint256) private _deliveryIds;/* delivery address => deliveryId */
+    /** 
+    @dev uint256 delivery id
+    @dev Delivery
+    */ 
     mapping(uint256 => Delivery) private _deliveries;/* deliveryId => code accessable struct */
     /* MODIFIERS */
     /* access gets only project owner */
@@ -321,19 +377,19 @@ contract CHAIN_ECOMMERCE {
     }
     /* CHANGING OWNERSHIP  */
     function changeOwner(address addr) external onlyOwner returns (address) {
-        require(address(0) != addr, "Invalid address");
+        require(address(0) != addr, ADDRESS_NOT_EXIST);
         _owner = addr;
         return addr;
     }
 
     function changeShopOwner(address addr) external onlyShop returns (address) {
-        require(address(0) != addr, "Invalid address");
+        require(address(0) != addr, ADDRESS_NOT_EXIST);
         _shopIds[addr] = _shopIds[msg.sender];
         delete _shopIds[msg.sender];
         return addr;
     }
     function changeCustomerOwner(address addr) external onlyCustomer returns (address) {
-        require(address(0) != addr, "Invalid address");
+        require(address(0) != addr, ADDRESS_NOT_EXIST);
         _customerIds[addr] = _customerIds[msg.sender];
         delete _customerIds[msg.sender];
         return addr;
@@ -343,7 +399,7 @@ contract CHAIN_ECOMMERCE {
         onlyDelivery
         returns (address)
     {
-        require(address(0) != addr, "Invalid address");
+        require(address(0) != addr, ADDRESS_NOT_EXIST);
         _deliveryIds[addr] = _deliveryIds[msg.sender];
         delete _deliveryIds[msg.sender];
         // _deliveries[_deliveryIds[msg.sender]].owner = addr;
@@ -353,138 +409,96 @@ contract CHAIN_ECOMMERCE {
     function withdrawShopBalance(address payable addr, uint256 amount)
         external
         onlyShop
+        nonReentrant
         returns (address, uint256)
     {
-        require(addr != address(0), "Address doesn't exist");
+        require(addr != address(0), ADDRESS_NOT_EXIST);
         require(
             _shops[_shopIds[msg.sender]].availableBalance >= amount,
-            "Your shop doesn't has this amount eth"
+            NOT_ENOUGH_ETHER
         );
-        (bool sent, ) = addr.call{value: amount}("");
-        require(sent, "Transfer failure");
         _shops[_shopIds[msg.sender]].availableBalance -= amount;
+        (bool sent, ) = addr.call{value: amount}("");
+        require(sent, TRANSFER_FAILURE);
         return (addr, amount);
     }
 
     function withdrawDeliveryBalance(address payable addr, uint256 amount)
         external
         onlyDelivery
+        nonReentrant
         returns (address, uint256)
     {
-        require(addr != address(0), "Address doesn't exist");
+        require(addr != address(0), ADDRESS_NOT_EXIST);
         require(
             _deliveries[_deliveryIds[msg.sender]].availableBalance >= amount,
-            "Your shop doesn't has this amount eth"
+            NOT_ENOUGH_ETHER
         );
-        (bool sent, ) = addr.call{value: amount}("");
-        require(sent, "Transfer failure");
         _deliveries[_deliveryIds[msg.sender]].availableBalance -= amount;
+        (bool sent, ) = addr.call{value: amount}("");
+        require(sent, TRANSFER_FAILURE);
         return (addr, amount);
     }
 
     function withdrawBalance(address payable addr, uint256 amount)
         external
         onlyOwner
+        nonReentrant
         returns (address, uint256)
     {
-        require(addr != address(0), "Address doesn't exist");
-        require(_availableBalance >= amount, "Doesn't has this amount eth");
-        (bool sent, ) = addr.call{value: amount}("");
-        require(sent, "Transfer failure");
+        require(addr != address(0), ADDRESS_NOT_EXIST);
+        require(_availableBalance >= amount, NOT_ENOUGH_ETHER);
         _availableBalance -= amount;
+        (bool sent, ) = addr.call{value: amount}("");
+        require(sent, TRANSFER_FAILURE);
         return (addr, amount);
     }
     /* BAN SETTERS */
-    function setDeliveryBan(address addr, bool _isBanned)
+    function setDeliveryBan(uint256 deliveryId, bool _isBanned)
         external
         onlyOwner
         returns (bool)
     {
         require(
-            _deliveries[_deliveryIds[addr]].exist,
-            "Delivery doesn't exist"
+            _deliveries[deliveryId].exist,
+            DELIVERY_NOT_EXIST
         );
-        _deliveries[_deliveryIds[addr]].isBanned = _isBanned;
+        _deliveries[deliveryId].isBanned = _isBanned;
         return _isBanned;
     }
 
-    function setShopBan(address addr, bool _isBanned)
+    function setShopBan(uint256 shopId, bool _isBanned)
         external
         onlyOwner
         returns (bool)
     {
-        require(_shops[_shopIds[addr]].exist, "Shop doesn't exist");
-        _shops[_shopIds[addr]].isBanned = _isBanned;
+        require(_shops[shopId].exist, SHOP_NOT_EXIST);
+        _shops[shopId].isBanned = _isBanned;
         return _isBanned;
     }
     /* BAN GETTERS */
-    function getDeliveryBan(address addr) external view returns (bool) {
-        require(
-            _deliveries[_deliveryIds[addr]].exist,
-            "Delivery doesn't exist"
-        );
-        return _deliveries[_deliveryIds[addr]].isBanned;
-    }
-
-    function getShopBan(address addr) external view returns (bool) {
-        require(_shops[_shopIds[addr]].exist, "Shop doesn't exist");
-        return _shops[_shopIds[addr]].isBanned;
-    }
-    /* BALANCE GETTERS */
-    /* ADD OWNER BALANCE GETTER */
-    function getShopBalance(address addr) external view returns (uint256) {
-        require(_shops[_shopIds[addr]].exist, "Shop doesn't exist");
-        return _shops[_shopIds[addr]].availableBalance;
-    }
-
-    function getDeliveryBalance(address addr) external view returns (uint256) {
-        require(_deliveries[_deliveryIds[addr]].exist, "Shop doesn't exist");
-        return _deliveries[_deliveryIds[addr]].availableBalance;
-    }
-    /* GET STRUCTS, NOW ONLY GETITEM */
-    function getItem(address addr, uint256 itemId)
-        external
-        view
-        returns (Item memory)
-    {
-        require(
-            _shops[_shopIds[addr]].items[itemId].exist,
-            "Item doesn't exist"
-        );
-        return _shops[_shopIds[addr]].items[itemId];
-    }
     /* ADD ITEMS, EDIT RETURN OR ADD EMIT */
     function addItems(string[] memory metaUris, uint256[] memory prices)
         external
         onlyShop
+        shopBanCheck(_shopIds[msg.sender])
+        returns (uint256[] memory)
     {
-        /* _itemId[] for current call */
-        /* 107k gas with Recepiet()*/
-        // require(msg.sender);
-        require(!_shops[_shopIds[msg.sender]].isBanned, "Shop is banned");
-        require(metaUris.length == prices.length, "Invalid args");
+        require(metaUris.length == prices.length, INVALID_ARGS);
         uint256[] memory ids = new uint256[](metaUris.length);
         for (uint256 index = 0; index < metaUris.length; index++) {
-            require(prices[index]>100000, "Price too low");
-            require(prices[index]>100000, "Price too low");
-            _shops[_shopIds[msg.sender]]
-                .items[_shops[_shopIds[msg.sender]]._itemId]
-                .metaUri = metaUris[index];
-            _shops[_shopIds[msg.sender]]
-                .items[_shops[_shopIds[msg.sender]]._itemId]
-                .price = prices[index];
-            _shops[_shopIds[msg.sender]]
-                .items[_shops[_shopIds[msg.sender]]._itemId]
-                .owner = _owner;
-            _shops[_shopIds[msg.sender]]
-                .items[_shops[_shopIds[msg.sender]]._itemId]
-                .isAvailable = true;
-            _shops[_shopIds[msg.sender]]
-                .items[_shops[_shopIds[msg.sender]]._itemId]
-                .exist = true;
+            require(prices[index]>MINIMAL_PRICE, "Price too low");
+            Item storage item = _shops[_shopIds[msg.sender]].items[_shops[_shopIds[msg.sender]]._itemId];            
+            item.metaUri = metaUris[index];
+            item.price = prices[index];
+            item.owner = _owner;
+            item.isAvailable = true;
+            item.exist = true;
+            item.tokenId = _shops[_shopIds[msg.sender]]._itemId;
             ids[index] = _shops[_shopIds[msg.sender]]._itemId;
             _shops[_shopIds[msg.sender]]._itemId++;
         }
+        return ids;
         // emit AddReceipts(metaUris, ids, prices);
     }
     /* ITEMS MINTING */
@@ -496,7 +510,7 @@ contract CHAIN_ECOMMERCE {
     )
         external
         payable
-        onlyCustomer
+        // onlyCustomer
         shopBanCheck(shopId)
         returns (
             uint256,
@@ -505,168 +519,158 @@ contract CHAIN_ECOMMERCE {
         )
     {
         uint256 fullPrice;
+        Shop storage shop = _shops[shopId];
+        Delivery storage delivery = _deliveries[delievryId];
+        Customer storage customer = _customers[_customerIds[msg.sender]];
+        if(!customer.exist) addCustomer("CUSTOMER",DEFAULT_META_URI);
+        require(delivery.exist,DELIVERY_NOT_EXIST);
         require(
-            _deliveries[delievryId].isAvailableForShop[shopId],
-            // _shops[shopId].items[tokenId].exist,
-            "This delivery method is not available for this shop"
+            delivery.isAvailableForShop[shopId],
+            "Delivery not available for shop"
         );
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            uint256 tokenId = tokenIds[index];
+            // uint256 tokenId = tokenIds[index];
+            Item memory item = shop.items[tokenIds[index]];
             require(
-                _shops[shopId].items[tokenId].exist,
-                "No such token"
+                item.exist,
+                ITEM_NOT_EXIST
             );
             require(
-                !_shops[shopId].items[tokenId].isMinted,
-                "Token already minted"
+                !item.isMinted,
+                ALREADY_MINTED
             );
             require(
-                _shops[shopId].items[tokenId].isAvailable,
+                !item.isCanceled,
+                ALREADY_CANCELED
+            );
+            require(
+                item.isAvailable,
                 "Token not available for mint"
             );
-            fullPrice += _shops[shopId].items[tokenId].price;
+            fullPrice += item.price + delivery.deliveryPrice;
         }
-        require(msg.value == fullPrice, "Invalid amount eth");
+        require(msg.value == fullPrice, NOT_ENOUGH_ETHER);
+        /* add shopId to customer if no orders */
+        if(customer.orders[shopId].length == 0){
+            customer._shops.push(shopId);
+        }
         for (uint256 index = 0; index < tokenIds.length; index++) {
             uint256 tokenId = tokenIds[index];
-            _shops[shopId].items[tokenId].owner = msg.sender;
-            _shops[shopId].items[tokenId].isMinted = true;
-            _shops[shopId]
-                .items[tokenId]
-                .deliveryId = delievryId;
+            // Item storage item = shop.items[tokenIds[index]];
+            shop.items[tokenIds[index]].owner = msg.sender;
+            shop.items[tokenIds[index]].isMinted = true;
+            shop.items[tokenIds[index]].deliveryId = delievryId;
+            shop.items[tokenIds[index]].deliveryPrice = delivery.deliveryPrice;
             _customers[_customerIds[msg.sender]].orders[shopId].push(tokenId);
+
         }
-        // _shopBalance += msg.value;
-        /* emit */
         return (shopId, tokenIds, sessionId);
     }
     /* DELIVERY APPROVAL */
-    function approveDelivery(address shopAddress,uint256[] memory tokenIds, address owner,string memory /* as sessionId */deliverySessionId) external onlyDelivery {
+    function approveDelivery(uint256 shopId,uint256[] memory tokenIds, address owner,string memory /* as sessionId */deliverySessionId) external onlyDelivery returns(uint256,uint256[]memory, address,string memory){
         /* for couriers only */
+        Shop storage shop = _shops[shopId];
+        Delivery storage delivery = _deliveries[_deliveryIds[msg.sender]];
         uint256 fullPrice;
-        deliverySessionId;
+        uint256 deliveryPrice;
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            uint256 tokenId = tokenIds[index];
-            _shops[_shopIds[shopAddress]].items[tokenId];
-            require(_shops[_shopIds[shopAddress]].items[tokenId].exist, "No such token");
-            require(_shops[_shopIds[shopAddress]].items[tokenId].deliveryId == _deliveryIds[msg.sender], "No such token");
-            require(_shops[_shopIds[shopAddress]].items[tokenId].isMinted, "Token not minted");
-            require(!_shops[_shopIds[shopAddress]].items[tokenId].isDelivered, "Already delivered");
-            require(!_shops[_shopIds[shopAddress]].items[tokenId].isCanceled, "Already canceled");
-            require(_shops[_shopIds[shopAddress]].items[tokenId].owner == owner, "Not owner");
-            fullPrice += _shops[_shopIds[shopAddress]].items[tokenId].price;
+            Item memory item = shop.items[tokenIds[index]];
+            require(item.exist, ITEM_NOT_EXIST);
+            require(item.deliveryId == _deliveryIds[msg.sender], "Ivalid delivery");
+            require(item.isMinted, "Token not minted");
+            require(!item.isDelivered, ALREADY_DELIVERED);
+            require(!item.isCanceled, ALREADY_CANCELED);
+            require(item.owner == owner, "Not an owner");
+            fullPrice += item.price;
+            deliveryPrice += item.deliveryPrice;
         }
-
-        // require(
-        //     !_recipiets[tokenId].isAvailable,
-        //     "Token not available for mint"
-        // );
         /* logic of transfer eth to courier and proj owner */
-        uint256 ethToOwner = fullPrice.div(100)*1 + 100;
-        uint256 ethToDelivery = fullPrice.div(100)*1+100000;/* edit minimal prices */
+        uint256 ethToOwner = fullPrice.div(100)*1 + FIXED_COMISSION;
+        uint256 ethToDelivery = fullPrice.div(100)*1+deliveryPrice;/* edit minimal prices */
         // uint256 ethToShop = fullPrice - ethToOwner - ethToDelivery;
-        _shops[_shopIds[shopAddress]].availableBalance +=  fullPrice - ethToOwner - ethToDelivery;
-        _deliveries[_deliveryIds[msg.sender]].availableBalance += ethToDelivery;
+        shop.availableBalance +=  fullPrice - ethToOwner - ethToDelivery;
+        delivery.availableBalance += ethToDelivery;
         _availableBalance +=ethToOwner;
-        // uint256 ethToOwner = 50;
-        // uint256 ethToDelivery = 50;
-        // // https://pastebin.com/DHBzh9eM
-        // // https://ethereum.stackexchange.com/questions/114948/how-to-integrate-2-5-sales-fee-in-an-nft-marketplace
-        // uint256 ethToShop = fullPrice - 100;
-        /* instead of transfers, all the balance will be contains in smartcontract */
-        // (bool transferToOwner, ) = _owner.call{value: ethToOwner}("");
-        // require(transferToOwner, "Transfer to project owner failure");
-        // (bool transferToDelivery, ) = msg.sender.call{value: ethToDelivery}("");
-        // require(transferToDelivery, "Transfer to delivery failure");
-        // _availableShopBalance += ethToShop; /* minus comissions */
         for (uint256 index = 0; index < tokenIds.length; index++) {
             uint256 tokenId = tokenIds[index];
-            _shops[_shopIds[shopAddress]].items[tokenId].isDelivered = true;
+            shop.items[tokenId].isDelivered = true;
         }
-        // emit Delivery(
-        //     msg.sender,
-        //     tokenIds,
-        //     ethToOwner,
-        //     ethToDelivery,
-        //     ethToShop
-        // );
+        return (shopId, tokenIds,owner ,deliverySessionId);
+
     }
     /* CANCEL ORDER */
-    function cancelItems(address shopAddress, uint256[] memory tokenIds)
+    function cancelItems(uint256 shopId, uint256[] memory tokenIds)
         external
         payable
         onlyCustomer
+        nonReentrant
         /* onlyCustomer || onlyDelivery */
     {
+        Shop storage shop = _shops[shopId];
+        // Customer storage customer = _customers[_customerIds[msg.sender]];
         /* payable!!! msg.value */
         /* 1% to shop + fixed gas fees */
         // require(_customers[_customerIds[msg.sender]].exist || , "Not a customer");
-        uint256 priceToCancel;
+        uint256 ethToDelivery;
+        uint256 ethToCanceler;
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            uint256 tokenId = tokenIds[index];
+            // uint256 tokenId = tokenIds[index];
+            Item memory item = shop.items[tokenIds[index]];
             require(
-                _shops[_shopIds[shopAddress]].items[tokenId].exist,
-                "No such token"
+                item.exist,
+                ITEM_NOT_EXIST
             );
             require(
-                _shops[_shopIds[shopAddress]].items[tokenId].isMinted,
+                item.isMinted,
                 "Token not minted"
             );
             require(
-                !_shops[_shopIds[shopAddress]].items[tokenId].isDelivered,
-                "Already delivered"
+                !item.isDelivered,
+                ALREADY_DELIVERED
             );
             require(
-                !_shops[_shopIds[shopAddress]].items[tokenId].isCanceled,
-                "Already canceled"
+                !item.isCanceled,
+                ALREADY_CANCELED
             );
             require(
-                _shops[_shopIds[shopAddress]].items[tokenId].owner ==
+                item.owner ==
                     msg.sender,
                 "Not owner"
             );
-            priceToCancel += _shops[_shopIds[shopAddress]].items[tokenId].price;
+            ethToCanceler += item.price;
+            ethToDelivery += item.deliveryPrice;
         }
 
         require(
-            msg.value == 1000, /* 0.05 * priceToCancel */
-            "Not enough ether to cancel"
+            msg.value == FIXED_COMISSION, /* 0.05 * priceToCancel */
+            NOT_ENOUGH_ETHER
         );
-        uint256 ethToOwner = 50;
-        uint256 ethToCanceler = priceToCancel - 100;
-
-        (bool transferToOwner, ) = _owner.call{value: ethToOwner}("");
-        require(transferToOwner, "Transfer to project owner failure");
-        (bool transferToCanceler, ) = msg.sender.call{value: ethToCanceler}("");
-        require(transferToCanceler, "Transfer to delivery failure");
-        _shops[_shopIds[shopAddress]].availableBalance += msg.value; /* minus comissions */
-        // _availableShopBalance -= priceToCancel; /* minus comissions */
+        uint256 ethToShop = ethToCanceler.div(100) * 1;
+        ethToCanceler = ethToCanceler - ethToShop;
+        uint256 ethToOwner = FIXED_COMISSION;
+        // uint256 ethToCanceler = priceToCancel;
+        _availableBalance += ethToOwner;
+        shop.availableBalance += ethToShop;
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            _shops[_shopIds[shopAddress]]
-                .items[tokenIds[index]]
-                .isCanceled = true;
-            _shops[_shopIds[shopAddress]]
-                .items[tokenIds[index]]
-                .isAvailable = false;
+            Item storage item = shop.items[tokenIds[index]];
+            item.isCanceled = true;
+            item.isAvailable = false;
         }
+        (bool transferToCanceler, ) = msg.sender.call{value: ethToCanceler}("");
+        require(transferToCanceler, TRANSFER_FAILURE);
     }
 
-    /* GET CURRENT _STRUCTID */
-    function getShops() external view returns (uint256/* address[] memory */) {
-        // return _shopAddresses;
-        return _shopId;
-    }
-
-    function getDeliveries() external view returns (uint256/* address[] memory */) {
-        // return _deliveryAddresses;
-        return _deliveryId;
-    }
     /* ADD DELIVERY METHODS */
-    function addDeliveryMethodToShops(uint256[] memory shopIds) external onlyDelivery{
+    function addDeliveryMethodToShops(uint256[] memory shopIds) external onlyDelivery returns (uint256, uint256 [] memory){
         /* mb add modifier to shop too, like a p2p */
+        Delivery storage delivery = _deliveries[_deliveryIds[msg.sender]];
         for (uint256 index = 0; index < shopIds.length; index++) {
-            _deliveries[_shopIds[msg.sender]].isAvailableForShop[shopIds[index]] = true;
+            if(!delivery.isAvailableForShop[shopIds[index]]){
+            delivery.isAvailableForShop[shopIds[index]] = true;
+            delivery._shopIds.push(shopIds[index]);
+            }
         }
+        return (_deliveryIds[msg.sender],shopIds);
     }
     /* ADD STRUCTS */
     function addDelivery(
@@ -676,43 +680,43 @@ contract CHAIN_ECOMMERCE {
         uint256 deliveryPrice
     )
         external
-        // address[][] memory servicedStoreAddresses /* unnecessary, deliveries can add from delivery contract */
         onlyOwner
     {
-        require(bytes(title).length > 0&&bytes(metaUri).length > 0&&deliveryOwnerWalletAddress != address(0),"Invalid args");
+        require(bytes(title).length > 0&&bytes(metaUri).length > 0&&deliveryOwnerWalletAddress != address(0),INVALID_ARGS);
+        require(!_deliveries[_deliveryIds[deliveryOwnerWalletAddress]].exist,"Shop already exist");
         _deliveryIds[deliveryOwnerWalletAddress] = _deliveryId;
         _deliveries[_deliveryId];
         _shops[_shopId].metaUri = metaUri;
         _deliveries[_deliveryId].title = title;
         _deliveries[_deliveryId].exist = true;
         _deliveries[_deliveryId].deliveryPrice = deliveryPrice;
-        // _deliveryAddresses.push(
-        //     deliveryOwnerWalletAddress
-        //     // address(new ShopOwner(address(this), shopOwnerWalletAddress))
-        // );
+        _deliveries[_deliveryId].deliveryId = _deliveryId;
         _deliveryId++;
     }
-
-    function addCustomer (string memory title, string memory metaUri) external {
-        require(bytes(title).length > 0&&bytes(metaUri).length > 0,"Invalid args");
+    function addCustomer (string memory title, string memory metaUri) public returns(uint256,string memory,string memory){
+        require(bytes(title).length > 0&&bytes(metaUri).length > 0,INVALID_ARGS);
+        require(!_customers[_customerIds[msg.sender]].exist,"Customer already exist");
         _customerIds[msg.sender] = _customerId;
         _customers[_customerId].exist = true;
         _customers[_customerId].title = title;
         _customers[_customerId].metaUri = metaUri;
-        // _customerAddresses.push(msg.sender);
+        _customers[_customerId].customerId = _customerId;
         _customerId++;
+        return (_customerId-1,title, metaUri);
     }
     function addShop(
         string memory title,
         string memory metaUri,
         address shopOwnerWalletAddress
     ) external onlyOwner {
-        require(bytes(title).length > 0&&bytes(metaUri).length > 0&&shopOwnerWalletAddress != address(0),"Invalid args");
+        require(bytes(title).length > 0&&bytes(metaUri).length > 0&&shopOwnerWalletAddress != address(0),INVALID_ARGS);
+        require(!_shops[_shopIds[shopOwnerWalletAddress]].exist,"Shop already exist");
         _shopIds[shopOwnerWalletAddress] = _shopId;
         // _shops[_shopId];
         _shops[_shopId].metaUri = metaUri;
         _shops[_shopId].title = title;
         _shops[_shopId].exist = true;
+        _shops[_shopId].shopId = _shopId;
         // _shopAddresses.push(
         //     shopOwnerWalletAddress
         //     // address(new ShopOwner(address(this), shopOwnerWalletAddress))
@@ -739,11 +743,13 @@ contract CHAIN_ECOMMERCE {
     function changeCustomer(
         string memory title,
         string memory metaUri
-    ) external onlyCustomer {
+    ) external onlyCustomer returns(string memory, string memory){
         if (bytes(title).length > 0) _customers[_customerIds[msg.sender]].title = title;
         if (bytes(metaUri).length > 0) _customers[_customerIds[msg.sender]].metaUri = metaUri;
+        return (title,metaUri);
     }
     /* CHANGE ITEMS */
+
     function changeItems(
         uint256[] memory tokenIds, extBoolean[]memory availablity, uint256[] memory prices,string[] memory metaUris
     ) external onlyShop returns (uint256[] memory,bool[] memory,uint256[] memory,string[] memory){
@@ -751,54 +757,151 @@ contract CHAIN_ECOMMERCE {
             tokenIds.length == availablity.length && 
             tokenIds.length == prices.length && 
             tokenIds.length == metaUris.length,
-            "Invalid args"
+            INVALID_ARGS
         );
+        Shop storage shop = _shops[_shopIds[msg.sender]];
         bool[] memory _availablity = new bool[](availablity.length);
         uint256[] memory _prices = new uint256[](prices.length);
         string[] memory _metaUris = new string[](metaUris.length);
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            _shops[_shopIds[msg.sender]].items[tokenIds[index]];
-            require(_shops[_shopIds[msg.sender]].items[tokenIds[index]].exist, "Token doesn't exist");
-            require(!_shops[_shopIds[msg.sender]].items[tokenIds[index]].isMinted, "Token already minted");
+            shop.items[tokenIds[index]];
+            Item storage item = shop.items[tokenIds[index]];
+            require(item.exist, ITEM_NOT_EXIST);
+            require(!item.isMinted, ALREADY_MINTED);
+            require(!item.isDelivered,ALREADY_DELIVERED);
+            require(!item.isCanceled,ALREADY_CANCELED);
             if(bytes(metaUris[index]).length > 0) {
-            _shops[_shopIds[msg.sender]].items[tokenIds[index]].metaUri = metaUris[index];
+            item.metaUri = metaUris[index];
                 _metaUris[index] = metaUris[index];
                 }
             else {
-                _metaUris[index] = _shops[_shopIds[msg.sender]].items[tokenIds[index]].metaUri;
+                _metaUris[index] = item.metaUri;
             }
-            if(prices[index] >/* minimal price */ 100000) {
-                _shops[_shopIds[msg.sender]].items[tokenIds[index]].price = prices[index];
+            if(prices[index] >MINIMAL_PRICE) {
+                item.price = prices[index];
                 _prices[index] = prices[index];
                 }
             else {
-                _prices[index] = _shops[_shopIds[msg.sender]].items[tokenIds[index]].price;
+                _prices[index] = item.price;
             }
             if(availablity[index] == extBoolean.False){
-                _shops[_shopIds[msg.sender]].items[tokenIds[index]].isAvailable = false;
+                item.isAvailable = false;
                 // _availablity[index] = false;
             }
             else if(availablity[index] == extBoolean.True){
-                _shops[_shopIds[msg.sender]].items[tokenIds[index]].isAvailable = true;
+                item.isAvailable = true;
                 _availablity[index] = true;
             }
             else{
-                _availablity[index] = _shops[_shopIds[msg.sender]].items[tokenIds[index]].isAvailable;
+                _availablity[index] = item.isAvailable;
 
             }
-
-
         }
         return (tokenIds,_availablity,_prices,_metaUris);
     }
-    function getCustomer()public view returns(string memory, string memory){
+    /* GETTERS */
+    function getItem(uint256 shopId, uint256 itemId)
+        external
+        view
+        returns (Item memory)
+    {
+        require(
+            _shops[shopId].items[itemId].exist,
+            ITEM_NOT_EXIST
+        );
+        return _shops[shopId].items[itemId];
+    }
+    function getItemsBatch(uint256[]memory shopIds, uint256[]memory itemIds) public view returns (Item[]memory){
+        require(shopIds.length == itemIds.length, INVALID_ARGS);
+        Item[] memory items = new Item[](itemIds.length);
+        for (uint256 index = 0; index < items.length; index++) {
+            require(_shops[shopIds[index]].exist,SHOP_NOT_EXIST);
+            require( _shops[shopIds[index]].items[itemIds[index]].exist, ITEM_NOT_EXIST);
+            items[index] = _shops[shopIds[index]].items[itemIds[index]];
+        }
+        return items;
+    }
+    function getCustomers() external view returns (uint256[] memory/* address[] memory */) {
+        // return _shopAddresses;
+        uint256[] memory customerIds = new uint256[](_customerId);
+        for (uint256 index = 0; index < customerIds.length; index++) {
+            customerIds[index] = index;
+        }
+        return customerIds;
+    }
+
+    function getCustomer(uint256 customerId)public view returns(string memory, string memory, uint256 [] memory){
+        Customer storage customer = _customers[customerId];
+        require(customer.exist, CUSTOMER_NOT_EXIST);
+        return(customer.title,customer.metaUri, customer._shops);
+    }
+    function getCustomerId() public view returns (uint256){
+        Customer storage customer = _customers[_customerIds[msg.sender]];
+        require(customer.exist, CUSTOMER_NOT_EXIST);
+        return _customerIds[msg.sender];
+    }
+    /* onlyServer function nneds cache */
+    function getCustomerPurchases(uint256 customerId,uint256 shopId)public view returns(Item[] memory){
         // Customer storage customer = _customers[_customerIds[msg.sender]];
-        return(_customers[_customerIds[msg.sender]].title,_customers[_customerIds[msg.sender]].metaUri);
+        Customer storage customer = _customers[customerId];
+        require(customer.exist, CUSTOMER_NOT_EXIST);
+        Item []memory orders = new Item[](customer.orders[shopId].length);
+        for (uint256 index = 0; index < customer.orders[shopId].length; index++) {
+            orders[index] = _shops[shopId].items[customer.orders[shopId][index]];
+        }
+        return orders;
+    }
+    function getShops() external view returns (uint256[] memory/* address[] memory */) {
+        // return _shopAddresses;
+        uint256[] memory shopIds = new uint256[](_shopId);
+        for (uint256 index = 0; index < shopIds.length; index++) {
+            shopIds[index] = index;
+        }
+        return shopIds;
+    }
+    /** 
+    @dev return Shop by id
+    @param shopId shop Id
+    @return (uint256 id, string memory title, bool isBanned, uint256 itemId,uint256 balance)
+
+     */
+    function getShop(uint256 shopId)external view returns(uint256,string memory title,string memory metaUri,bool isBanned,uint256 _itemId,uint256 balance){
+        Shop storage shop = _shops[shopId];
+        require(shop.exist, SHOP_NOT_EXIST);
+        return (_shops[shopId].shopId,_shops[shopId].metaUri,_shops[shopId].title,_shops[shopId].isBanned,_shops[shopId]._itemId, _shops[shopId].availableBalance);
+    }
+    function getShopItems(uint256 shopId) external view returns(Item[] memory){
+        Shop storage shop = _shops[shopId];
+        require(shop.exist, SHOP_NOT_EXIST);
+        Item[] memory items = new Item [](shop._itemId);
+        for (uint256 index = 0; index < items.length; index++) {
+            items[index] = shop.items[index];
+        }
+        return (items);
+    } 
+    /**
+    @dev Get deliveries ids
+     @return ids array 
+     */
+    function getDeliveries() external view returns (uint256[] memory/* address[] memory */) {
+        // return _deliveryAddresses;
+        uint256[] memory deliveryIds = new uint256[](_deliveryId);
+        for (uint256 index = 0; index < deliveryIds.length; index++) {
+            deliveryIds[index] = index;
+        }
+        return deliveryIds;
     }
     
+    function getDelivery(uint256 deliveryId)external view returns(uint256,string memory title,string memory metaUri,bool isBanned,uint256[] memory shopIds,uint256 balance){
+        Delivery storage delivery = _deliveries[deliveryId];
+        require(delivery.exist, DELIVERY_NOT_EXIST);
+        return (delivery.deliveryId,delivery.metaUri,delivery.title,delivery.isBanned,delivery._shopIds, delivery.availableBalance);
+    }
 
     /* ADD DATA CHANGING, COMISSIONS AND READ ALL THE COMMENTS, ADD EVENTS, REURNS AND SO ON */
     /* ADD MINIMAL PRICE +delivery constant price */
 }
+
+
 
 
