@@ -29,7 +29,11 @@ const Dashboard = () => {
         dispatch(setAddress(await signer.getAddress()));
         console.log("address: ", await signer?.getAddress());
         console.log(contract?.address);
-        console.log(await contract?.getCustomer());
+        const [title, metaUri, shops] = await contract?.getCustomer();
+        // console.log(shops);
+        for (const shop of shops) {
+          console.log(await contract?.getCustomerPurchases(shop));
+        }
       }
       // console.log(contract?.address);
     })();
