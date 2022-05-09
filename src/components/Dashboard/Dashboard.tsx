@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import "./Dashboard.module.scss";
 import styles from "./Dashboard.module.scss";
 import notConnected from "../Assets/img/notFound.png";
@@ -10,8 +10,9 @@ import {
   setConnected,
 } from "../../store/walletReducer";
 import { useSigner } from "../../hooks/useSigner";
-import { useContract } from "../../hooks/useContact";
+import { useContract } from "../../hooks/useContract";
 import { ConnectWallet } from "../../hooks/ConnectWallet";
+import { ItemCard } from "./ItemCard";
 
 const Dashboard = () => {
   const { balance, address, connected } = useAppSelector(
@@ -22,17 +23,38 @@ const Dashboard = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const contract = useContract();
   const signer = useSigner();
+  const [orders, setOrders] = useState<
+    {
+      deliveryId: BigNumber;
+      deliveryPrice: BigNumber;
+      exist: boolean;
+      isAvailable: boolean;
+      isCanceled: boolean;
+      isDelivered: boolean;
+      isMinted: boolean;
+      metaUri: string;
+      owner: string;
+      price: BigNumber;
+      shopId: BigNumber;
+      tokenId: BigNumber;
+    }[]
+  >([]);
   useEffect(() => {
     (async () => {
-      if (signer) {
+      if (signer && contract) {
         dispatch(setBalance(await signer.getBalance()));
         dispatch(setAddress(await signer.getAddress()));
         console.log("address: ", await signer?.getAddress());
         console.log(contract?.address);
-        const [title, metaUri, shops] = await contract?.getCustomer();
+        const customerId = await contract?.getCustomerId();
+        const { metaUri, title, shops } = await contract?.getCustomer(
+          customerId
+        );
+        console.log(shops.toString);
         // console.log(shops);
         for (const shop of shops) {
-          console.log(await contract?.getCustomerPurchases(shop));
+          console.log(await contract?.getCustomerPurchases(customerId, shop));
+          setOrders(await contract?.getCustomerPurchases(customerId, shop));
         }
       }
       // console.log(contract?.address);
@@ -51,6 +73,9 @@ const Dashboard = () => {
               <p className={styles.purchasesStatusText}>
                 Your active purchases
               </p>
+              {orders.map((order, index) => (
+                <ItemCard key={index} {...order} />
+              ))}
               <div className={styles.mmStatus}>
                 <div className={styles.puchasesActivePanels}>
                   <div className={styles.purchases}>

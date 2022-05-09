@@ -6,9 +6,11 @@ import React, {
   useEffect,
   Context,
 } from "react";
+import { ChainEcommerce__factory, ChainEcommerce } from "../../typechain";
+// import { ChainEcommerce } from "../../typechain";
 // import { CHAIN_ID } from "../App";
 import contractAddress from "../.env/contract-address.json";
-import CHAIN_ECOMMERCE from "../artifacts/contracts/CHAIN_ECOMMERCE.sol/CHAIN_ECOMMERCE.json";
+// import CHAIN_ECOMMERCE from "../artifacts/contracts/Chain_ecommerce.sol/Chain_ecommerce.json";
 const CHAIN_ID = 31337;
 
 interface WalletContextI {
@@ -19,7 +21,7 @@ interface WalletContextI {
 export const WalletContext = createContext<{
   provider: ethers.providers.Web3Provider | undefined;
   signer: ethers.providers.JsonRpcSigner | undefined;
-  contract: Contract | undefined;
+  contract: ChainEcommerce | undefined;
   // connected: boolean;
   // setConnected: React.Dispatch<React.SetStateAction<boolean>> | undefined;
 }>({
@@ -45,18 +47,21 @@ const getProvider = () => {
 const getSigner = (provider?: ethers.providers.Web3Provider) =>
   (provider || getProvider()).getSigner();
 
-const getContract = (signer?: ethers.providers.JsonRpcSigner) => {
-  return new ethers.Contract(
+const getContract = (
+  provider?: ethers.providers.Web3Provider /* signer?: ethers.providers.JsonRpcSigner */
+) => {
+  return ChainEcommerce__factory.connect(
     contractAddress.address,
-    CHAIN_ECOMMERCE.abi,
-    signer || getSigner()
+    provider || getProvider()
+    // CHAIN_ECOMMERCE.abi,
+    /* signer || getSigner() */
   );
 };
 
 const WalletProvider = ({ children }: { children: JSX.Element }) => {
   const [provider, setProvider] = useState(getProvider());
   const [signer, setSigner] = useState(getSigner(provider));
-  const [contract, setContract] = useState(getContract(signer));
+  const [contract, setContract] = useState(getContract(provider));
   useEffect(() => {
     const init = async () => {
       // console.log("Wallet provider init");
@@ -65,7 +70,7 @@ const WalletProvider = ({ children }: { children: JSX.Element }) => {
         // console.log(provider);
         const signer = getSigner(provider);
         setSigner(signer);
-        setContract(getContract(signer));
+        setContract(getContract(provider));
         // console.log("accountsChanged");
       });
       provider.on("network", (newNetwork, oldNetwork) => {

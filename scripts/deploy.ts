@@ -5,6 +5,19 @@
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 import fs from "fs";
+const fse = require("fs-extra");
+
+const srcDir = `path/to/file`;
+const destDir = `path/to/destination/directory`;
+
+// To copy a folder or file
+fse.copySync(srcDir, destDir, { overwrite: true }, function (err) {
+  if (err) {
+    console.error(err); // add if you want to replace existing folder or file with same name
+  } else {
+    console.log("success!");
+  }
+});
 const path = "src/.env/contract-address.json";
 
 async function main() {
@@ -16,16 +29,15 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const CHAIN_ECOMMERCE = await ethers.getContractFactory("CHAIN_ECOMMERCE");
+  const CHAIN_ECOMMERCE = await ethers.getContractFactory("Chain_ecommerce");
   console.log("factory added");
   const chain_ecommerce = await CHAIN_ECOMMERCE.deploy();
-
   await chain_ecommerce.deployed();
   const address = JSON.stringify({
     address: chain_ecommerce.address,
   });
   fs.writeFileSync(path, address);
-  console.log("CHAIN_ECOMMERCE deployed to:", chain_ecommerce.address);
+  fs.console.log("CHAINECOMMERCE deployed to:", chain_ecommerce.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
