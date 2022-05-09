@@ -231,9 +231,9 @@ contract Chain_ecommerce is ReentrancyGuard{
     uint256 public constant FIXED_COMISSION = 0.1 ether;
     string public constant DEFAULT_META_URI = "DEFAULT_META_URI";
     using SafeMath for uint256;
-    uint256 private _shopId;
-    uint256 private _deliveryId;
-    uint256 private _customerId;
+    uint256 private _shopId = 1;/* if 0 _customers[_customerIds[msg.sender]] always would return customer with 0 id for non existing addresses */
+    uint256 private _deliveryId = 1;
+    uint256 private _customerId = 1;
     /* 
     shop and delivery addresse need only for msg.sender validation
     use for another cases only Ids
@@ -252,7 +252,7 @@ contract Chain_ecommerce is ReentrancyGuard{
         bool exist;
         uint256 tokenId;
         string metaUri;
-        address owner;
+        uint256 ownerId;
         uint256 shopId;
         uint256 price;
         bool isAvailable;
@@ -483,7 +483,8 @@ contract Chain_ecommerce is ReentrancyGuard{
             Item storage item = _shops[_shopIds[msg.sender]].items[_shops[_shopIds[msg.sender]]._itemId];            
             item.metaUri = metaUris[index];
             item.price = prices[index];
-            item.owner = _owner;
+            item.shopId = _shops[_shopIds[msg.sender]].shopId;
+            item.ownerId = 0;/* non-existing id */
             item.isAvailable = true;
             item.exist = true;
             item.tokenId = _shops[_shopIds[msg.sender]]._itemId;
@@ -548,7 +549,7 @@ contract Chain_ecommerce is ReentrancyGuard{
         for (uint256 index = 0; index < tokenIds.length; index++) {
             uint256 tokenId = tokenIds[index];
             // Item storage item = shop.items[tokenIds[index]];
-            shop.items[tokenIds[index]].owner = msg.sender;
+            shop.items[tokenIds[index]].ownerId = _customerIds[msg.sender];
             shop.items[tokenIds[index]].isMinted = true;
             shop.items[tokenIds[index]].deliveryId = delievryId;
             shop.items[tokenIds[index]].deliveryPrice = delivery.deliveryPrice;
@@ -571,7 +572,7 @@ contract Chain_ecommerce is ReentrancyGuard{
             require(item.isMinted, "Token not minted");
             require(!item.isDelivered, ALREADY_DELIVERED);
             require(!item.isCanceled, ALREADY_CANCELED);
-            require(item.owner == owner, "Not an owner");
+            require(item.ownerId == _customerIds[owner], "Not an owner");
             fullPrice += item.price;
             deliveryPrice += item.deliveryPrice;
         }
@@ -598,6 +599,7 @@ contract Chain_ecommerce is ReentrancyGuard{
         /* onlyCustomer || onlyDelivery */
     {
         Shop storage shop = _shops[shopId];
+        require(shop.exist,SHOP_NOT_EXIST);
         // Customer storage customer = _customers[_customerIds[msg.sender]];
         /* payable!!! msg.value */
         /* 1% to shop + fixed gas fees */
@@ -624,8 +626,8 @@ contract Chain_ecommerce is ReentrancyGuard{
                 ALREADY_CANCELED
             );
             require(
-                item.owner ==
-                    msg.sender,
+                item.ownerId ==
+                    _customerIds[msg.sender],
                 "Not owner"
             );
             ethToCanceler += item.price;
@@ -814,9 +816,9 @@ contract Chain_ecommerce is ReentrancyGuard{
     }
     function getCustomers() external view returns (uint256[] memory/* address[] memory */) {
         // return _shopAddresses;
-        uint256[] memory customerIds = new uint256[](_customerId);
+        uint256[] memory customerIds = new uint256[](_customerId-1);
         for (uint256 index = 0; index < customerIds.length; index++) {
-            customerIds[index] = index;
+            customerIds[index] = index+1;
         }
         return customerIds;
     }
@@ -844,9 +846,9 @@ contract Chain_ecommerce is ReentrancyGuard{
     }
     function getShops() external view returns (uint256[] memory/* address[] memory */) {
         // return _shopAddresses;
-        uint256[] memory shopIds = new uint256[](_shopId);
+        uint256[] memory shopIds = new uint256[](_shopId-1);
         for (uint256 index = 0; index < shopIds.length; index++) {
-            shopIds[index] = index;
+            shopIds[index] = index+1;
         }
         return shopIds;
     }
@@ -876,9 +878,9 @@ contract Chain_ecommerce is ReentrancyGuard{
      */
     function getDeliveries() external view returns (uint256[] memory/* address[] memory */) {
         // return _deliveryAddresses;
-        uint256[] memory deliveryIds = new uint256[](_deliveryId);
+        uint256[] memory deliveryIds = new uint256[](_deliveryId-1);
         for (uint256 index = 0; index < deliveryIds.length; index++) {
-            deliveryIds[index] = index;
+            deliveryIds[index] = index+1;
         }
         return deliveryIds;
     }

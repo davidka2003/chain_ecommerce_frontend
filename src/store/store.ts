@@ -1,9 +1,11 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import walletReducer from "./walletReducer";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+import customerReducer from "./customerReducer";
 
 const rootReducer = combineReducers({
   walletReducer,
+  customerReducer,
 });
 export const store = configureStore({
   reducer: rootReducer,

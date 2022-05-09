@@ -47,6 +47,7 @@ const config: HardhatUserConfig = {
     },
     localhost: {
       allowUnlimitedContractSize: true,
+      loggingEnabled: true,
       // gas: 12000000,
       // blockGasLimit: 0x1fffffffffffff,
       gas: 12000000000,

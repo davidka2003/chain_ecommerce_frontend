@@ -1,5 +1,8 @@
 import { BigNumber, utils } from "ethers";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useContract } from "../../hooks/useContract";
+import { cancelCustomerItems } from "../../store/customerReducer";
+import { useAppDispatch } from "../../store/store";
 
 export const ItemCard = ({
   deliveryId,
@@ -10,7 +13,7 @@ export const ItemCard = ({
   isDelivered,
   isMinted,
   metaUri,
-  owner,
+  ownerId,
   price,
   shopId,
   tokenId,
@@ -23,12 +26,28 @@ export const ItemCard = ({
   isDelivered: boolean;
   isMinted: boolean;
   metaUri: string;
-  owner: string;
+  ownerId: BigNumber;
   price: BigNumber;
   shopId: BigNumber;
   tokenId: BigNumber;
 }) => {
+  const dispatch = useAppDispatch();
+  const [FIXED_COMISSION, setFIXED_COMISSION] = useState(utils.parseEther("0"));
+  useEffect(() => {
+    const init = async () => {
+      contract && setFIXED_COMISSION(await contract.FIXED_COMISSION());
+    };
+    init();
+  }, []);
+
+  // const FIXED_COMISSION = useMemo(contract?.FIXED_COMISSION
+  const contract = useContract();
   const [additionalInfo, setAdditionalInfo] = useState(false);
+  const availableToCancel =
+    !isDelivered && !isCanceled && isMinted && isAvailable && exist;
+  // const owner = useMemo( ()=>{
+  //   return Promise.resolve("")
+  // },[])
   return (
     (exist && (
       <div>
@@ -42,10 +61,28 @@ export const ItemCard = ({
         </button>
         {additionalInfo && (
           <div>
-            <h1>Owner: {owner}</h1>
+            <h1>OwnerId: {ownerId.toString()}</h1>
             <h1>Item price: {utils.formatEther(price)} MATIC</h1>
             <h1>Delivery cost: {utils.formatEther(deliveryPrice)} MATIC</h1>
           </div>
+        )}
+        {contract && availableToCancel && (
+          <button
+            onClick={() => {
+              console.log(shopId, [tokenId]);
+              !FIXED_COMISSION.isZero() &&
+                dispatch(
+                  cancelCustomerItems({
+                    contract,
+                    orderIds: [tokenId],
+                    shopId,
+                    comission: FIXED_COMISSION,
+                  })
+                );
+            }}
+          >
+            Cancel order {utils.formatEther(FIXED_COMISSION)} eth
+          </button>
         )}
       </div>
     )) || <></>

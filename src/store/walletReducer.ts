@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Contract, ethers } from "ethers";
+import { BigNumber, Contract, ethers } from "ethers";
 const initialState = {
-  address: <string>"",
+  address: "",
   balance: "0",
   connected: false,
 };
@@ -9,7 +9,7 @@ const slice = createSlice({
   name: "wallet",
   initialState,
   reducers: {
-    setBalance(state, action: PayloadAction<ethers.BigNumberish>) {
+    setBalance(state, action: PayloadAction<BigNumber>) {
       state.balance = ethers.utils.formatEther(action.payload);
     },
     setAddress(state, action: PayloadAction<string>) {

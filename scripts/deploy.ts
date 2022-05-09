@@ -5,19 +5,13 @@
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 import fs from "fs";
-const fse = require("fs-extra");
+import fse from "fs-extra";
+import Path from "path";
 
-const srcDir = `path/to/file`;
-const destDir = `path/to/destination/directory`;
+const srcDir = Path.join(__dirname, `../typechain`);
+const destDir = Path.join(__dirname, `../src/typechain`);
 
 // To copy a folder or file
-fse.copySync(srcDir, destDir, { overwrite: true }, function (err) {
-  if (err) {
-    console.error(err); // add if you want to replace existing folder or file with same name
-  } else {
-    console.log("success!");
-  }
-});
 const path = "src/.env/contract-address.json";
 
 async function main() {
@@ -37,7 +31,9 @@ async function main() {
     address: chain_ecommerce.address,
   });
   fs.writeFileSync(path, address);
-  fs.console.log("CHAINECOMMERCE deployed to:", chain_ecommerce.address);
+  console.log("CHAINECOMMERCE deployed to:", chain_ecommerce.address);
+  fse.copySync(srcDir, destDir, { overwrite: true });
+  console.log("typechain coppied");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
