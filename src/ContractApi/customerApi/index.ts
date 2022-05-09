@@ -36,8 +36,6 @@ export const cancelOrder = async ({
   console.log(comission);
   await contract.cancelItems(shopId, orderIds, { value: comission });
   // return [];
-  process.env.ROPSTEN_URL =
-    "http://127.0.0.1:8545" &&
-    (await new Promise((resolve) => setTimeout(resolve, 5000)));
+  await new Promise((resolve) => setTimeout(resolve, 5000));
   return await updatePurchases(contract);
 };
