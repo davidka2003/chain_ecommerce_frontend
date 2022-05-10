@@ -1,5 +1,6 @@
 import { BigNumber } from "ethers";
 import React, { useEffect, useState } from "react";
+import { getRoles } from "../../ContractApi";
 import { useContract } from "../../hooks/useContract";
 import { useProvider } from "../../hooks/useProvider";
 import { useSigner } from "../../hooks/useSigner";
@@ -17,6 +18,7 @@ const Purchases = () => {
   useEffect(() => {
     if (contract) {
       dispatch(updateCustomerPurchases({ contract }));
+      getRoles(contract).then(console.log);
     }
   }, [signer]);
   // console.log("Purchases re-render", orders);

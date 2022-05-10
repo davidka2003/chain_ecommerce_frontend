@@ -863,6 +863,11 @@ contract Chain_ecommerce is ReentrancyGuard{
         require(shop.exist, SHOP_NOT_EXIST);
         return (shop.shopId,shop.metaUri,shop.title,shop.isBanned,shop._itemId, shop.availableBalance);
     }
+    function getShopId() public view returns (uint256){
+        Shop storage shop = _shops[_shopIds[msg.sender]];
+        require(shop.exist, CUSTOMER_NOT_EXIST);
+        return _customerIds[msg.sender];
+    }
     function getShopItems(uint256 shopId) external view returns(Item[] memory){
         Shop storage shop = _shops[shopId];
         require(shop.exist, SHOP_NOT_EXIST);
@@ -889,6 +894,11 @@ contract Chain_ecommerce is ReentrancyGuard{
         Delivery storage delivery = _deliveries[deliveryId];
         require(delivery.exist, DELIVERY_NOT_EXIST);
         return (delivery.deliveryId,delivery.metaUri,delivery.title,delivery.isBanned,delivery._shopIds, delivery.availableBalance);
+    }
+    function getDeliveryId() public view returns (uint256){
+        Delivery storage delivery = _deliveries[_deliveryIds[msg.sender]];
+        require(delivery.exist, CUSTOMER_NOT_EXIST);
+        return _deliveryIds[msg.sender];
     }
 
     /* ADD DATA CHANGING, COMISSIONS AND READ ALL THE COMMENTS, ADD EVENTS, REURNS AND SO ON */
