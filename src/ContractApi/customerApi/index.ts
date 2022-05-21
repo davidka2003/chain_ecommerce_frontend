@@ -1,41 +1,43 @@
 import { BigNumber } from "ethers";
-import { OrderI } from "../../store/customerReducer";
-import { ChainEcommerce } from "../../typechain";
-
-export const updatePurchases = async (contract: ChainEcommerce) => {
-  const orders = <Promise<OrderI[]>[]>[];
-  const customerId = await contract.getCustomerId();
-  console.log(await contract.signer.getAddress());
-  console.log(customerId);
-  const customer = await contract.getCustomer(customerId);
-  const shops = customer.shops;
-  for (const shop of shops) {
-    orders.push(contract.getCustomerPurchases(customerId, shop));
+import { Ecommerce } from "../../typechain";
+import { ItemI, OrderI } from "../contractTypes";
+/// optimize it later
+export const updateOrders = async (contract: Ecommerce) => {
+  const customer = await contract.getCustomer(0);
+  const orderIds = customer.orders;
+  const orders = [] as Promise<{ order: OrderI; items: ItemI[] }>[];
+  for (const order of orderIds) {
+    orders.push(
+      (async () => {
+        const ord = (await contract.getOrdersBatch(order[0], [order[1]]))[0];
+        const items = await updateOrderItems(contract, ord);
+        return {
+          order: ord,
+          items,
+        };
+      })()
+    );
   }
-  console.log((await Promise.all(orders)).flat());
-  // console.log(await contract.getCustomerPurchases(1, 1));
-  // console.log(orders);
-  return (await Promise.all(orders)).flat();
+  return await Promise.all(orders);
 };
-export const updateCustomer = async (contract: ChainEcommerce) => {
-  const customerId = await contract.getCustomerId();
-  const customer = await contract.getCustomer(customerId);
-  return customer;
+export const updateOrderItems = async (contract: Ecommerce, order: OrderI) => {
+  return (await contract.getItemsBatch(order.shopId, order.itemIds)) as ItemI[];
 };
-export const cancelOrder = async ({
+export const updateCustomer = async (contract: Ecommerce) => {
+  return await contract.getCustomer(0);
+};
+export const cancelOrderCustomer = async ({
   contract,
-  shopId,
-  orderIds,
+  order,
   comission,
 }: {
-  contract: ChainEcommerce;
-  orderIds: BigNumber[];
-  shopId: BigNumber;
+  contract: Ecommerce;
+  order: OrderI;
   comission: BigNumber;
 }) => {
-  console.log(comission);
-  await contract.cancelItems(shopId, orderIds, { value: comission });
+  console.log(comission, order.deliveryId.toString());
+  await contract.cancelOrder(order.deliveryId, order.id, { value: comission });
   // return [];
   await new Promise((resolve) => setTimeout(resolve, 5000));
-  return await updatePurchases(contract);
+  return await updateOrders(contract);
 };

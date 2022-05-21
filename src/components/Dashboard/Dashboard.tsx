@@ -11,9 +11,8 @@ import {
 } from "../../store/walletReducer";
 import { useSigner } from "../../hooks/useSigner";
 import { useContract } from "../../hooks/useContract";
-import { ItemCard } from "./ItemCard";
-import { ChainEcommerce } from "../../../typechain";
-import Purchases from "./Purchases";
+import { ItemCard } from "../Other/ItemCard";
+import Purchases from "./Orders/Orders";
 import { updateCustomerInfo } from "../../store/customerReducer";
 import { isConnected } from "../../hooks/isConnected";
 import ConnectWalletButton from "../Other/ConnectWalletButton";
@@ -46,7 +45,7 @@ const Dashboard = () => {
           <div className={styles.controlPanel}>
             <div className="walletCard">
               <ConnectWalletButton className={styles.connectButton} />
-              {connected && (
+              {connected && customer.customer && (
                 <>
                   <div className="accountDisplay">
                     <h3>Address: {address}</h3>
@@ -58,7 +57,7 @@ const Dashboard = () => {
                     <h3>Title: {customer.customer.title}</h3>
                   </div>
                   <div className="balanceDisplay">
-                    <h3>Metauri: {customer.customer.metaUri}</h3>
+                    <h3>Metauri: {customer.customer.uri}</h3>
                   </div>
                 </>
               )}

@@ -1,9 +1,10 @@
 import { ethers } from "ethers";
 import { useContext, useEffect, useState } from "react";
-import { ChainEcommerce } from "../typechain";
+import { Ecommerce } from "../typechain";
+
 import { WalletContext } from "./WalletProvider";
 
-export const useContract = (): ChainEcommerce | undefined => {
+export const useContract = () /* : Ecommerce | undefined */ => {
   const context = useContext(WalletContext);
   if (context.connected && context?.contract) {
     const { contract } = context;

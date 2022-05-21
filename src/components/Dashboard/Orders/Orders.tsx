@@ -1,15 +1,16 @@
 import { BigNumber } from "ethers";
 import React, { useEffect, useState } from "react";
-import { getRoles } from "../../ContractApi";
-import { useContract } from "../../hooks/useContract";
-import { useProvider } from "../../hooks/useProvider";
-import { useSigner } from "../../hooks/useSigner";
-import { OrderI, updateCustomerPurchases } from "../../store/customerReducer";
-import { useAppDispatch, useAppSelector } from "../../store/store";
-import ActivePurchases from "./ActivePurchases";
-import CompletedPurchases from "./CompletedPurchases";
-import styles from "./Dashboard.module.scss";
-import { ItemCard } from "./ItemCard";
+import { getRoles } from "../../../ContractApi";
+import { useContract } from "../../../hooks/useContract";
+import { useProvider } from "../../../hooks/useProvider";
+import { useSigner } from "../../../hooks/useSigner";
+import { updateCustomerOrders } from "../../../store/customerReducer";
+import { useAppDispatch, useAppSelector } from "../../../store/store";
+import ActiveOrders from "./ActiveOrders";
+import CompletedOrders from "./CompletedOrders";
+import styles from "../Dashboard.module.scss";
+import { ItemCard } from "../../Other/ItemCard";
+import InActiveOrders from "./InActiveOrders";
 const Purchases = () => {
   const { orders } = useAppSelector((state) => state.customerReducer);
   const dispatch = useAppDispatch();
@@ -17,17 +18,18 @@ const Purchases = () => {
   const signer = useSigner();
   useEffect(() => {
     if (contract) {
-      dispatch(updateCustomerPurchases({ contract }));
+      dispatch(updateCustomerOrders({ contract }));
       getRoles(contract).then(console.log);
     }
   }, [signer]);
   // console.log("Purchases re-render", orders);
   return (
     <div className={styles.purchasesStatus}>
-      <ActivePurchases ordersProps={orders.orders} />
+      <ActiveOrders ordersProps={orders.orders} />
       <div>Fetch: {orders.status}</div>
-      <CompletedPurchases ordersProps={orders.orders} />
+      <CompletedOrders ordersProps={orders.orders} />
       <div>Fetch: {orders.status}</div>
+      <InActiveOrders ordersProps={orders.orders}></InActiveOrders>
       <div className={styles.purchasesActive}>
         <p className={styles.purchasesStatusText}>Your active purchases</p>
         <div className={styles.mmStatus}>

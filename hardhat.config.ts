@@ -28,7 +28,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1,
       },
     },
   },
@@ -46,12 +46,13 @@ const config: HardhatUserConfig = {
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     localhost: {
+      // gasPrice: 1000000000,
       allowUnlimitedContractSize: true,
       loggingEnabled: true,
       // gas: 12000000,
       // blockGasLimit: 0x1fffffffffffff,
-      gas: 12000000000,
-      blockGasLimit: 12000000,
+      // gas: 12000000000,
+      // blockGasLimit: 12000000,
       url: "http://127.0.0.1:8545",
       accounts: [
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",

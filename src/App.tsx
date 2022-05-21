@@ -7,9 +7,11 @@ import Description from "./components/Description/Description";
 import NotFoundPage from "./components/NotFoundPage/NotFoundPage";
 import Dashboard from "./components/Dashboard/Dashboard";
 import WalletProvider from "./hooks/WalletProvider";
+import Checkout from "./components/Checkout/Checkout";
 // import { useWeb3Context } from "web3-react";
 // https://www.npmjs.com/package/web3-react
 function App() {
+  // console.log("render");
   return (
     <>
       <Header />
@@ -20,6 +22,14 @@ function App() {
           element={
             <WalletProvider>
               <Dashboard />
+            </WalletProvider>
+          }
+        ></Route>
+        <Route
+          path="/checkout/:id"
+          element={
+            <WalletProvider>
+              <Checkout />
             </WalletProvider>
           }
         ></Route>

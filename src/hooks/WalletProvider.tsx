@@ -6,22 +6,20 @@ import React, {
   useEffect,
   Context,
 } from "react";
-import { ChainEcommerce__factory, ChainEcommerce } from "../typechain";
-// import { ChainEcommerce } from "../../typechain";
-// import { CHAIN_ID } from "../App";
 import contractAddress from "../.env/contract-address.json";
-import CHAIN_ECOMMERCE from "../artifacts/contracts/Chain_ecommerce.sol/Chain_ecommerce.json";
+import CHAIN_ECOMMERCE from "../artifacts/contracts/Ecommerce.sol/Ecommerce.json";
+import { Ecommerce } from "../typechain";
 const CHAIN_ID = 31337;
 
 interface WalletContextI {
   provider: ethers.providers.Web3Provider | undefined;
   signer: ethers.providers.JsonRpcSigner | undefined;
-  contract: ChainEcommerce | undefined;
+  contract: Ecommerce | undefined;
 }
 export const WalletContext = createContext<{
   provider: ethers.providers.Web3Provider | undefined;
   signer: ethers.providers.JsonRpcSigner | undefined;
-  contract: ChainEcommerce | undefined;
+  contract: Ecommerce | undefined;
   connected: boolean;
   setConnected: React.Dispatch<React.SetStateAction<boolean>> | undefined;
   // connected: boolean;
@@ -59,7 +57,7 @@ const getContract = (
     // provider || getProvider()
     CHAIN_ECOMMERCE.abi,
     signer || getSigner()
-  ) as ChainEcommerce;
+  ) as Ecommerce;
 };
 
 const WalletProvider = ({ children }: { children: JSX.Element }) => {

@@ -23,9 +23,9 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const CHAIN_ECOMMERCE = await ethers.getContractFactory("Chain_ecommerce");
+  const CHAIN_ECOMMERCE = await ethers.getContractFactory("Ecommerce");
   console.log("factory added");
-  const chain_ecommerce = await CHAIN_ECOMMERCE.deploy();
+  const chain_ecommerce = await CHAIN_ECOMMERCE.deploy({ gasLimit: 30000000 });
   await chain_ecommerce.deployed();
   const address = JSON.stringify({
     address: chain_ecommerce.address,

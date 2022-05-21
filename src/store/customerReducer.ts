@@ -1,99 +1,72 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { BigNumber, Contract, ethers } from "ethers";
+import { BigNumber, Contract, ethers, utils } from "ethers";
+import { OrderIExt } from ".";
+import { CustomerI, ItemI, OrderI } from "../ContractApi/contractTypes";
 import {
-  cancelOrder,
+  cancelOrderCustomer,
   updateCustomer,
-  updatePurchases,
+  updateOrderItems,
+  updateOrders,
 } from "../ContractApi/customerApi";
-import { ChainEcommerce } from "../typechain";
+import { Ecommerce } from "../typechain";
 export type status = "success" | "pending" | "failure";
-export interface OrderI {
-  deliveryId: BigNumber;
-  deliveryPrice: BigNumber;
-  exist: boolean;
-  isAvailable: boolean;
-  isCanceled: boolean;
-  isDelivered: boolean;
-  isMinted: boolean;
-  metaUri: string;
-  ownerId: BigNumber;
-  price: BigNumber;
-  shopId: BigNumber;
-  tokenId: BigNumber;
-}
-export interface CustomerI {
-  title: string;
-  shops: BigNumber[];
-  metaUri: string;
-}
-
-export const updateCustomerPurchases = createAsyncThunk(
-  "contract#getCustomerPurchases",
-  async ({ contract }: { contract: ChainEcommerce }) => {
-    return await updatePurchases(contract);
+/** @dev add limit later  */
+export const updateCustomerOrders = createAsyncThunk(
+  "contract#getOrdersBatch",
+  async ({ contract }: { contract: Ecommerce }) => {
+    return await updateOrders(contract);
   }
 );
 export const updateCustomerInfo = createAsyncThunk(
   "contract#getCustomer",
-  async ({ contract }: { contract: ChainEcommerce }) => {
+  async ({ contract }: { contract: Ecommerce }) => {
     return await updateCustomer(contract);
   }
 );
-export const cancelCustomerItems = createAsyncThunk(
-  "contract#cancelItems",
-  async ({
-    contract,
-    shopId,
-    orderIds,
-    comission,
-  }: {
-    contract: ChainEcommerce;
-    orderIds: BigNumber[];
-    shopId: BigNumber;
-    comission: BigNumber;
-  }) => {
+export const cancelOrder = createAsyncThunk(
+  "contract#cancelOrder",
+  async ({ contract, order }: { contract: Ecommerce; order: OrderI }) => {
     // console.log(comission);
-    return await cancelOrder({
+    const comission = utils.parseEther("0.5");
+    return await cancelOrderCustomer({
       contract,
-      orderIds,
-      shopId,
+      order,
       comission,
     });
   }
 );
+export const getOrderItems = createAsyncThunk(
+  "contract#getItemsBatch",
+  async ({ contract, order }: { contract: Ecommerce; order: OrderI }) => {
+    return await updateOrderItems(contract, order);
+  }
+);
 const initialState = {
-  orders: <{ orders: OrderI[]; status: status }>{
+  orders: <{ orders: OrderIExt[]; status: status }>{
     orders: [],
     status: "pending",
   },
-  customer: <{ customer: CustomerI; status: status }>{
-    customer: { title: "Customer", shops: [], metaUri: "defaultMetaUri" },
+  customer: <{ customer: CustomerI | undefined; status: status }>{
+    customer: undefined,
     status: "pending",
   },
 };
 const slice = createSlice({
   name: "customer",
   initialState,
-  reducers: {
-    setOrders(state, action: PayloadAction<OrderI[]>) {
-      /* delete non indexed */
-      state.orders = { orders: action.payload, status: "success" };
-    },
-    setCustomer(state, action: PayloadAction<any>) {
-      state.customer = action.payload;
-    },
-  },
+  reducers: {},
+
   extraReducers: (builder) => {
     /**
-     * @dev updateCustomerPurchases
+     * @dev updateCustomerOrders
      */
-    builder.addCase(updateCustomerPurchases.pending, (state) => {
+    builder.addCase(updateCustomerOrders.pending, (state) => {
       state.orders = { ...state.orders, status: "pending" };
     });
-    builder.addCase(updateCustomerPurchases.rejected, (state, action) => {
+    builder.addCase(updateCustomerOrders.rejected, (state) => {
       state.orders = { orders: [], status: "failure" };
     });
-    builder.addCase(updateCustomerPurchases.fulfilled, (state, action) => {
+    builder.addCase(updateCustomerOrders.fulfilled, (state, action) => {
       state.orders = { orders: action.payload, status: "success" };
     });
     /**
@@ -107,20 +80,20 @@ const slice = createSlice({
     });
     builder.addCase(updateCustomerInfo.rejected, (state, action) => {
       state.customer = {
-        customer: { title: "Customer", shops: [], metaUri: "defaultMetaUri" },
+        customer: undefined,
         status: "failure",
       };
     });
     /**
      * @dev cancelOrders and updatePurchases
      */
-    builder.addCase(cancelCustomerItems.pending, (state) => {
+    builder.addCase(cancelOrder.pending, (state) => {
       state.orders = { ...state.orders, status: "pending" };
     });
-    builder.addCase(cancelCustomerItems.rejected, (state, action) => {
+    builder.addCase(cancelOrder.rejected, (state, action) => {
       state.orders = { ...state.orders, status: "failure" };
     });
-    builder.addCase(cancelCustomerItems.fulfilled, (state, action) => {
+    builder.addCase(cancelOrder.fulfilled, (state, action) => {
       console.log(action.payload);
       state.orders = { orders: action.payload, status: "success" };
     });
@@ -128,4 +101,4 @@ const slice = createSlice({
 });
 
 export default slice.reducer;
-export const { setOrders, setCustomer } = slice.actions;
+// export const { setOrders, setCustomer } = slice.actions;
