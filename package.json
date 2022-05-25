@@ -24,7 +24,8 @@
     "eject": "react-scripts eject",
     "blockchain": "npx hardhat node",
     "dev": "yarn compile && yarn preStart && yarn start",
-    "compile": "npx hardhat run scripts/deploy.ts --network localhost",
+    "migrate": "npx hardhat run scripts/migrate.ts --network localhost",
+    "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "preStart": "npx hardhat run scripts/preStart.ts --network localhost"
   },
   "eslintConfig": {

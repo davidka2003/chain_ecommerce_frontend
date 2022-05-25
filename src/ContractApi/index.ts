@@ -22,33 +22,36 @@ export const getRoles = async (contract: Ecommerce) => {
 };
 export const Purchase = async (
   contract: Ecommerce,
-  shopId: BigNumber,
-  deliveryId: BigNumber,
-  itemIds: BigNumber[],
-  sessionId?: string
+  shopId: string,
+  deliveryId: string,
+  itemIds: string[],
+  destination: [string, string],
+  sessionId: string
 ) => {
-  const delivery = await contract.getDelivery(deliveryId);
-  // delivery.shift
-  const shopIds = new Array(itemIds.length).fill(shopId);
-  const items = await contract.getItemsBatch(shopIds, itemIds);
+  const delivery = await contract.getDelivery(BigNumber.from(deliveryId));
+  const shop = await contract.getShop(BigNumber.from(shopId));
+  const items = await contract.getItemsBatch(BigNumber.from(shopId), itemIds);
   console.log(items);
-  const value = items
+  const itemsPrice = items
     .map((item) => item.price)
     .reduce((a, b) => {
       // const item = a;
       // a.price = a.price;
       return a.add(b);
-    });
-  console.log(value.toString());
+    }, BigNumber.from(0));
+  const deliveryPrice = (
+    await contract.getDestinationBatch(delivery.id, [destination])
+  )[0].price;
+  // console.log(value.toString());
 
   const tx = await contract.createOrder(
-    shopId,
-    deliveryId,
-    itemIds,
-    ["IL", "HF"],
-    sessionId || "",
+    shop.id,
+    delivery.id,
+    itemIds.map((id) => BigNumber.from(id)),
+    destination,
+    sessionId,
     {
-      value, //: ethers.utils.parseEther("1.5"),
+      value: itemsPrice.add(deliveryPrice), //: ethers.utils.parseEther("1.5"),
     }
   );
   console.log(tx.hash);

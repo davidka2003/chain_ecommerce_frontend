@@ -2,6 +2,7 @@ import axios from "axios";
 import { BigNumber } from "ethers";
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { checkoutInfoT } from "../../Api";
 import { GetCheckoutInfo } from "../../Api/checkout";
 import { Purchase } from "../../ContractApi";
 import { useContract } from "../../hooks/useContract";
@@ -9,12 +10,7 @@ import ConnectWalletButton from "../Other/ConnectWalletButton";
 
 const Checkout = () => {
   const contract = useContract();
-  const [orderInfo, setOrderInfo] = useState<{
-    address: string;
-    deliveryId: BigNumber;
-    shopId: BigNumber;
-    tokenIds: BigNumber[];
-  }>();
+  const [orderInfo, setOrderInfo] = useState<checkoutInfoT>();
   const params = useParams<{ id: string }>();
   const id = decodeURIComponent(params.id!);
   useEffect(() => {
@@ -22,12 +18,13 @@ const Checkout = () => {
       const data = await GetCheckoutInfo(id);
       console.log(data);
       setOrderInfo({
-        address: data.address,
-        deliveryId: BigNumber.from(data.deliveryId),
-        shopId: BigNumber.from(data.shopId),
-        tokenIds: data.tokenIds.map((tokenId: string) =>
-          BigNumber.from(tokenId)
-        ),
+        // address: data.address,
+        destination: data.destination,
+        checkout_hash: data.checkout_hash,
+        shop_sid: data.shop_sid,
+        deliveryId: data.deliveryId,
+        shopId: data.shopId,
+        tokenIds: data.tokenIds,
       });
     })();
   }, []);
@@ -44,7 +41,9 @@ const Checkout = () => {
               contract,
               orderInfo.shopId,
               orderInfo.deliveryId,
-              orderInfo.tokenIds
+              orderInfo.tokenIds,
+              orderInfo.destination,
+              orderInfo.checkout_hash
             );
           }}
         >
