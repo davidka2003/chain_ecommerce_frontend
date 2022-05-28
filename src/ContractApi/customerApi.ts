@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
-import { Ecommerce } from "../../typechain";
-import { ItemI, OrderI } from "../contractTypes";
+import { Ecommerce } from "../typechain";
+import { ItemI, OrderI } from "./contractTypes";
 /// optimize it later
 export const updateOrders = async (contract: Ecommerce) => {
   const customer = await contract.getCustomer(0);

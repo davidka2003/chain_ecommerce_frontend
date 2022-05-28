@@ -6,11 +6,12 @@ import { useProvider } from "../../../hooks/useProvider";
 import { useSigner } from "../../../hooks/useSigner";
 import { updateCustomerOrders } from "../../../store/customerReducer";
 import { useAppDispatch, useAppSelector } from "../../../store/store";
-import ActiveOrders from "./ActiveOrders";
-import CompletedOrders from "./CompletedOrders";
+import ActiveOrders from "./DeliveryActiveOrders";
+import CompletedOrders from "./DeliveryCompletedOrders";
 import styles from "../Dashboard.module.scss";
 import { ItemCard } from "../../Other/ItemCard";
-import InActiveOrders from "./InActiveOrders";
+import InActiveOrders from "./DeliveryInActiveOrders";
+import { updateDeliveryOrders } from "../../../store/deliveryReducer";
 const Purchases = () => {
   const { orders } = useAppSelector((state) => state.customerReducer);
   const dispatch = useAppDispatch();
@@ -18,7 +19,7 @@ const Purchases = () => {
   const signer = useSigner();
   useEffect(() => {
     if (contract) {
-      dispatch(updateCustomerOrders({ contract }));
+      dispatch(updateDeliveryOrders({ contract }));
       getRoles(contract).then(console.log);
     }
   }, [signer]);

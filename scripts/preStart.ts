@@ -89,7 +89,7 @@ const init = async function () {
   tx = await contract.createOrder(
     1,
     1,
-    [2, 3],
+    [2],
     ["RU", "SPB"],
     JSON.stringify({ data: "data" }),
     {
@@ -100,7 +100,7 @@ const init = async function () {
         .add(
           await getItemsPrice(
             BigNumber.from(1),
-            [2, 3].map((a) => BigNumber.from(a))
+            [2].map((a) => BigNumber.from(a))
           )
         ),
     }

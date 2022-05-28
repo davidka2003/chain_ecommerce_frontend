@@ -1,24 +1,24 @@
 import { BigNumber, ethers } from "ethers";
 import { Ecommerce } from "../typechain";
-
+import { RoleT } from "./contractTypes";
 export const getRoles = async (contract: Ecommerce) => {
-  const shopId = await contract
-    .getShop(0)
-    .then((shop) => shop.id)
-    .catch(() => BigNumber.from(0));
+  const roles = <RoleT[]>[];
   const customerId = await contract
     .getCustomer(0)
     .then((customer) => customer.id)
     .catch(() => BigNumber.from(0));
+  !!customerId.gt(0) && roles.push("customer");
+  const shopId = await contract
+    .getShop(0)
+    .then((shop) => shop.id)
+    .catch(() => BigNumber.from(0));
+  !!shopId.gt(0) && roles.push("shop");
   const deliveryId = await contract
     .getDelivery(0)
     .then((delivery) => delivery.id)
     .catch(() => BigNumber.from(0));
-  return {
-    isShop: !!shopId.gt(0),
-    isCustomer: !!customerId.gt(0),
-    isDelivery: !!deliveryId.gt(0),
-  };
+  !!deliveryId.gt(0) && roles.push("delivery");
+  return roles;
 };
 export const Purchase = async (
   contract: Ecommerce,
@@ -43,7 +43,13 @@ export const Purchase = async (
     await contract.getDestinationBatch(delivery.id, [destination])
   )[0].price;
   // console.log(value.toString());
-
+  console.log(
+    shop.id,
+    delivery.id,
+    itemIds.map((id) => BigNumber.from(id)),
+    destination,
+    sessionId
+  );
   const tx = await contract.createOrder(
     shop.id,
     delivery.id,

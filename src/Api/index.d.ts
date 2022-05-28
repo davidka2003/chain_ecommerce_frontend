@@ -1,7 +1,7 @@
 export type checkoutInfoT = {
   shop_sid: string;
   shopId: string;
-  checkout_hash: string;
+  hash: string;
   // address: string;add it later
   tokenIds: string[];
   deliveryId: string;

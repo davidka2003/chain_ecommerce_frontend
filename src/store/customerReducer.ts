@@ -9,7 +9,7 @@ import {
   updateOrders,
 } from "../ContractApi/customerApi";
 import { Ecommerce } from "../typechain";
-export type status = "success" | "pending" | "failure";
+import { StatusT } from "./store";
 /** @dev add limit later  */
 export const updateCustomerOrders = createAsyncThunk(
   "contract#getOrdersBatch",
@@ -17,12 +17,12 @@ export const updateCustomerOrders = createAsyncThunk(
     return await updateOrders(contract);
   }
 );
-export const updateCustomerInfo = createAsyncThunk(
-  "contract#getCustomer",
-  async ({ contract }: { contract: Ecommerce }) => {
-    return await updateCustomer(contract);
-  }
-);
+// export const updateCustomerInfo = createAsyncThunk(
+//   "contract#getCustomer",
+//   async ({ contract }: { contract: Ecommerce }) => {
+//     return await updateCustomer(contract);
+//   }
+// );
 export const cancelOrder = createAsyncThunk(
   "contract#cancelOrder",
   async ({ contract, order }: { contract: Ecommerce; order: OrderI }) => {
@@ -42,11 +42,11 @@ export const getOrderItems = createAsyncThunk(
   }
 );
 const initialState = {
-  orders: <{ orders: OrderIExt[]; status: status }>{
+  orders: <{ orders: OrderIExt[]; status: StatusT }>{
     orders: [],
     status: "pending",
   },
-  customer: <{ customer: CustomerI | undefined; status: status }>{
+  customer: <{ customer: CustomerI | undefined; status: StatusT }>{
     customer: undefined,
     status: "pending",
   },
@@ -69,21 +69,21 @@ const slice = createSlice({
     builder.addCase(updateCustomerOrders.fulfilled, (state, action) => {
       state.orders = { orders: action.payload, status: "success" };
     });
-    /**
-     * @dev updateCustomerInfo
-     */
-    builder.addCase(updateCustomerInfo.fulfilled, (state, action) => {
-      state.customer = { customer: action.payload, status: "success" };
-    });
-    builder.addCase(updateCustomerInfo.pending, (state, action) => {
-      state.customer = { ...state.customer, status: "pending" };
-    });
-    builder.addCase(updateCustomerInfo.rejected, (state, action) => {
-      state.customer = {
-        customer: undefined,
-        status: "failure",
-      };
-    });
+    // /**
+    //  * @dev updateCustomerInfo
+    //  */
+    // builder.addCase(updateCustomerInfo.fulfilled, (state, action) => {
+    //   state.customer = { customer: action.payload, status: "success" };
+    // });
+    // builder.addCase(updateCustomerInfo.pending, (state, action) => {
+    //   state.customer = { ...state.customer, status: "pending" };
+    // });
+    // builder.addCase(updateCustomerInfo.rejected, (state, action) => {
+    //   state.customer = {
+    //     customer: undefined,
+    //     status: "failure",
+    //   };
+    // });
     /**
      * @dev cancelOrders and updatePurchases
      */

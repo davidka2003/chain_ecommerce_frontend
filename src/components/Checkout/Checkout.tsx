@@ -20,11 +20,11 @@ const Checkout = () => {
       setOrderInfo({
         // address: data.address,
         destination: data.destination,
-        checkout_hash: data.checkout_hash,
+        hash: data.hash,
         shop_sid: data.shop_sid,
         deliveryId: data.deliveryId,
         shopId: data.shopId,
-        tokenIds: data.tokenIds,
+        tokenIds: /* ["4"] ||  */ data.tokenIds,
       });
     })();
   }, []);
@@ -43,7 +43,7 @@ const Checkout = () => {
               orderInfo.deliveryId,
               orderInfo.tokenIds,
               orderInfo.destination,
-              orderInfo.checkout_hash
+              orderInfo.hash
             );
           }}
         >
